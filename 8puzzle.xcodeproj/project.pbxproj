@@ -25,6 +25,7 @@
 /* Begin PBXFileReference section */
 		54FAA612213C458F00756951 /* 8puzzle */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = 8puzzle; sourceTree = BUILT_PRODUCTS_DIR; };
 		54FAA615213C458F00756951 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		54FAA61C213C4D3800756951 /* EightPuzzle.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = EightPuzzle.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +59,7 @@
 			isa = PBXGroup;
 			children = (
 				54FAA615213C458F00756951 /* main.cpp */,
+				54FAA61C213C4D3800756951 /* EightPuzzle.h */,
 			);
 			path = 8puzzle;
 			sourceTree = "<group>";

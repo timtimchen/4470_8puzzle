@@ -6,10 +6,15 @@
 //  Copyright © 2018 jing hong chen. All rights reserved.
 //
 
-#include <iostream>
+#include "EightPuzzle.h"
+
+using namespace std;
 
 int main(int argc, const char * argv[]) {
-    // insert code here...
-    std::cout << "Hello, World!\n";
+    vector<Moves> solutionSteps;
+    
+    EightPuzzle newPuzzle;
+    newPuzzle.printSolution("test", solutionSteps);
+    
     return 0;
 }
