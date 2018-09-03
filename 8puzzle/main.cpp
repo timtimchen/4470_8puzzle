@@ -7,14 +7,19 @@
 //
 
 #include "EightPuzzle.h"
+#include <stdlib.h>     /* srand, rand */
 
 using namespace std;
 
 int main(int argc, const char * argv[]) {
-    vector<Moves> solutionSteps;
-    
     EightPuzzle newPuzzle;
-    newPuzzle.printSolution("test", solutionSteps);
+    if (argc < 2) {
+        cout << "Please input the puzzle cofing file name in the command line." << endl;
+    }
+    else {
+        newPuzzle.puzzleInit(argv[1]);
+        newPuzzle.depthFirst();
+    }
     
     return 0;
 }
