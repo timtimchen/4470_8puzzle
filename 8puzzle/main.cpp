@@ -19,6 +19,7 @@ int main(int argc, const char * argv[]) {
     else {
         newPuzzle.puzzleInit(argv[1]);
         newPuzzle.depthFirst();
+        newPuzzle.breadthFirst();
     }
     
     return 0;

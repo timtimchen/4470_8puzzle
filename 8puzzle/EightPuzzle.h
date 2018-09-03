@@ -13,17 +13,24 @@
 #include <sstream>
 #include <vector>
 #include <set>
-#include <time.h>
+#include <queue>
+#include <cstdio>
+#include <ctime>
 #include <algorithm>    // std::reverse
 
 #define CLOCKS_PER_MS (clock_t(1))
 #define PUZZLE_SIZE 9
 #define ROW_SIZE 3
-#define MAX_STEPS 40
+#define MAX_STEPS 100
 
 const std::string PUZZLE_GOAL = "12345678_";
 
 enum Moves { UP, DOWN, LEFT, RIGHT };
+
+struct Nodes {
+    std::string currentState;
+    std::vector<Moves> currentPath;
+};
 
 class EightPuzzle {
     private:
@@ -33,7 +40,10 @@ class EightPuzzle {
     std::set<std::string> visitedStates;
     int createdNodes;
     int expandedNodes;
-    int solveTime;  //in milliseconds
+    std::clock_t clock();
+    std::clock_t start;
+    std::clock_t end;
+    long solveTime;  //in milliseconds
 
     public:
     EightPuzzle() {
@@ -178,6 +188,7 @@ class EightPuzzle {
         std::ofstream myfile;
         myfile.open (searchName + "_result.txt");
         myfile << "search strategy: " << searchName << std::endl << std::endl;
+        myfile << "Running time (in milliseconds): "  << solveTime << std::endl << std::endl;
         myfile << "Expanded Nodes: "  << visitedStates.size() << std::endl << std::endl;
         myfile << "Solution Steps: "  << solutionSteps.size() << std::endl << std::endl;
         myfile << "                 " << currentState[0] << currentState[1] << currentState[2] << std::endl;
@@ -211,8 +222,8 @@ class EightPuzzle {
             } else {
                 visitedStates.insert(state);
                 int spacePosition = checkSpacePosition(state);
-                if ((spacePosition % ROW_SIZE != ROW_SIZE - 1) && depthFirstSearch(state, RIGHT, depth + 1)) {
-                    solutionSteps.push_back(RIGHT);
+                if (spacePosition >= ROW_SIZE && depthFirstSearch(state, UP, depth + 1)) {
+                    solutionSteps.push_back(UP);
                     return true;
                 } else if ((spacePosition < PUZZLE_SIZE - ROW_SIZE) && depthFirstSearch(state, DOWN, depth + 1)) {
                     solutionSteps.push_back(DOWN);
@@ -220,8 +231,8 @@ class EightPuzzle {
                 } else if ((spacePosition % ROW_SIZE != 0) && depthFirstSearch(state, LEFT, depth + 1)) {
                     solutionSteps.push_back(LEFT);
                     return true;
-                } else if (spacePosition >= ROW_SIZE && depthFirstSearch(state, UP, depth + 1)) {
-                    solutionSteps.push_back(UP);
+                } else if ((spacePosition % ROW_SIZE != ROW_SIZE - 1) && depthFirstSearch(state, RIGHT, depth + 1)) {
+                    solutionSteps.push_back(RIGHT);
                     return true;
                 } else {
                     return false;
@@ -237,23 +248,88 @@ class EightPuzzle {
         solutionSteps.clear();
         visitedStates.clear();
         solutionFound = true;
+        start = std::clock();
         if (startState.compare(PUZZLE_GOAL) != 0) {
             visitedStates.insert(startState);
             int spacePosition = checkSpacePosition(startState);
-            if ((spacePosition % ROW_SIZE != ROW_SIZE - 1) && depthFirstSearch(startState, RIGHT, 1)) {
-                solutionSteps.push_back(RIGHT);
+            if (spacePosition >= ROW_SIZE && depthFirstSearch(startState, UP, 1)) {
+                solutionSteps.push_back(UP);
             } else if ((spacePosition < PUZZLE_SIZE - ROW_SIZE) && depthFirstSearch(startState, DOWN, 1)) {
                 solutionSteps.push_back(DOWN);
             } else if ((spacePosition % ROW_SIZE != 0) && depthFirstSearch(startState, LEFT, 1)) {
                 solutionSteps.push_back(LEFT);
-            } else if (spacePosition >= ROW_SIZE && depthFirstSearch(startState, UP, 1)) {
-                solutionSteps.push_back(UP);
+            } else if ((spacePosition % ROW_SIZE != ROW_SIZE - 1) && depthFirstSearch(startState, RIGHT, 1)) {
+                solutionSteps.push_back(RIGHT);
             } else {
                 solutionFound = false;
             }
         }
+        end = std::clock();
+        solveTime = (end - start) / CLOCKS_PER_MS;
         std::reverse(solutionSteps.begin(),solutionSteps.end());
         printSolution("depth_first");
+    }
+    
+    void breadthFirst() {
+        createdNodes = 0;
+        expandedNodes = 0;
+        solveTime = 0;
+        solutionSteps.clear();
+        visitedStates.clear();
+        solutionFound = false;
+        std::queue<Nodes> nodeQueue;
+        start = std::clock();
+        if (startState.compare(PUZZLE_GOAL) != 0) {
+            visitedStates.insert(startState);
+            std::vector<Moves> path;
+            Nodes startNode{startState, path};
+            nodeQueue.push(startNode);
+            while (!solutionFound && !nodeQueue.empty()) {
+                if (nodeQueue.front().currentState.compare(PUZZLE_GOAL) == 0) {
+                    solutionFound = true;
+                    solutionSteps = nodeQueue.front().currentPath;
+                } else {
+                    visitedStates.insert(nodeQueue.front().currentState);
+                    int spacePosition = checkSpacePosition(nodeQueue.front().currentState);
+                    if (spacePosition >= ROW_SIZE) {
+                        Nodes newNode{nodeQueue.front().currentState, nodeQueue.front().currentPath};
+                        puzzleMove(newNode.currentState, UP);
+                        if (visitedStates.find(newNode.currentState) == visitedStates.end()) {
+                            newNode.currentPath.push_back(UP);
+                            nodeQueue.push(newNode);
+                        }
+                    }
+                    if (spacePosition < PUZZLE_SIZE - ROW_SIZE) {
+                        Nodes newNode{nodeQueue.front().currentState, nodeQueue.front().currentPath};
+                        puzzleMove(newNode.currentState, DOWN);
+                        if (visitedStates.find(newNode.currentState) == visitedStates.end()) {
+                            newNode.currentPath.push_back(DOWN);
+                            nodeQueue.push(newNode);
+                        }
+                    }
+                    if (spacePosition % ROW_SIZE != 0) {
+                        Nodes newNode{nodeQueue.front().currentState, nodeQueue.front().currentPath};
+                        puzzleMove(newNode.currentState, LEFT);
+                        if (visitedStates.find(newNode.currentState) == visitedStates.end()) {
+                            newNode.currentPath.push_back(LEFT);
+                            nodeQueue.push(newNode);
+                        }
+                    }
+                    if (spacePosition % ROW_SIZE != ROW_SIZE - 1) {
+                        Nodes newNode{nodeQueue.front().currentState, nodeQueue.front().currentPath};
+                        puzzleMove(newNode.currentState, RIGHT);
+                        if (visitedStates.find(newNode.currentState) == visitedStates.end()) {
+                            newNode.currentPath.push_back(RIGHT);
+                            nodeQueue.push(newNode);
+                        }
+                    }
+                    nodeQueue.pop();
+                }
+            }
+        }
+        end = std::clock();
+        solveTime = (end - start) / CLOCKS_PER_MS;
+        printSolution("breadth_first");
     }
 };
 
