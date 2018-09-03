@@ -18,9 +18,10 @@ int main(int argc, const char * argv[]) {
     }
     else {
         newPuzzle.puzzleInit(argv[1]);
-//        newPuzzle.breadthFirst();
-        newPuzzle.depthFirst();
-//        newPuzzle.depthLimited();
+        newPuzzle.breadthFirst();
+//        newPuzzle.depthFirst();
+        newPuzzle.depthLimited();
+        newPuzzle.iterativeDeepening();
     }
     
     return 0;

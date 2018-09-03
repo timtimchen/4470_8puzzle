@@ -15,6 +15,7 @@
 #include <set>
 #include <queue>
 #include <stack>
+#include <map>
 #include <cstdio>
 #include <ctime>
 #include <algorithm>    // std::reverse
@@ -211,66 +212,6 @@ class EightPuzzle {
         myfile.close();
     }
     
-    bool depthLimitedSearch(std::string state, Moves direction, int depth) {
-        if (depth > MAX_STEPS) {
-            return false;
-        } else {
-            puzzleMove(state, direction);
-            if (state.compare(PUZZLE_GOAL) == 0) {
-                return true;
-            } else if (visitedStates.find(state) != visitedStates.end()) {
-                return false;
-            } else {
-                visitedStates.insert(state);
-                int spacePosition = checkSpacePosition(state);
-                if (spacePosition >= ROW_SIZE && depthLimitedSearch(state, UP, depth + 1)) {
-                    solutionSteps.push_back(UP);
-                    return true;
-                } else if ((spacePosition < PUZZLE_SIZE - ROW_SIZE) && depthLimitedSearch(state, DOWN, depth + 1)) {
-                    solutionSteps.push_back(DOWN);
-                    return true;
-                } else if ((spacePosition % ROW_SIZE != 0) && depthLimitedSearch(state, LEFT, depth + 1)) {
-                    solutionSteps.push_back(LEFT);
-                    return true;
-                } else if ((spacePosition % ROW_SIZE != ROW_SIZE - 1) && depthLimitedSearch(state, RIGHT, depth + 1)) {
-                    solutionSteps.push_back(RIGHT);
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-        }
-    }
-
-    void depthLimited() {
-        createdNodes = 0;
-        expandedNodes = 0;
-        solveTime = 0;
-        solutionSteps.clear();
-        visitedStates.clear();
-        solutionFound = true;
-        start = std::clock();
-        if (startState.compare(PUZZLE_GOAL) != 0) {
-            visitedStates.insert(startState);
-            int spacePosition = checkSpacePosition(startState);
-            if (spacePosition >= ROW_SIZE && depthLimitedSearch(startState, UP, 1)) {
-                solutionSteps.push_back(UP);
-            } else if ((spacePosition < PUZZLE_SIZE - ROW_SIZE) && depthLimitedSearch(startState, DOWN, 1)) {
-                solutionSteps.push_back(DOWN);
-            } else if ((spacePosition % ROW_SIZE != 0) && depthLimitedSearch(startState, LEFT, 1)) {
-                solutionSteps.push_back(LEFT);
-            } else if ((spacePosition % ROW_SIZE != ROW_SIZE - 1) && depthLimitedSearch(startState, RIGHT, 1)) {
-                solutionSteps.push_back(RIGHT);
-            } else {
-                solutionFound = false;
-            }
-        }
-        end = std::clock();
-        solveTime = (end - start) / CLOCKS_PER_MS;
-        std::reverse(solutionSteps.begin(),solutionSteps.end());
-        printSolution("depth_limited");
-    }
-    
     void breadthFirst() {
         createdNodes = 0;
         expandedNodes = 0;
@@ -396,6 +337,133 @@ class EightPuzzle {
         solveTime = (end - start) / CLOCKS_PER_MS;
         printSolution("depth_first");
     }
+
+    bool depthLimitedSearch(std::string state, Moves direction, int depth) {
+        if (depth > MAX_STEPS) {
+            return false;
+        } else {
+            puzzleMove(state, direction);
+            if (state.compare(PUZZLE_GOAL) == 0) {
+                return true;
+            } else if (visitedStates.find(state) != visitedStates.end()) {
+                return false;
+            } else {
+                visitedStates.insert(state);
+                int spacePosition = checkSpacePosition(state);
+                if (spacePosition >= ROW_SIZE && depthLimitedSearch(state, UP, depth + 1)) {
+                    solutionSteps.push_back(UP);
+                    return true;
+                } else if ((spacePosition < PUZZLE_SIZE - ROW_SIZE) && depthLimitedSearch(state, DOWN, depth + 1)) {
+                    solutionSteps.push_back(DOWN);
+                    return true;
+                } else if ((spacePosition % ROW_SIZE != 0) && depthLimitedSearch(state, LEFT, depth + 1)) {
+                    solutionSteps.push_back(LEFT);
+                    return true;
+                } else if ((spacePosition % ROW_SIZE != ROW_SIZE - 1) && depthLimitedSearch(state, RIGHT, depth + 1)) {
+                    solutionSteps.push_back(RIGHT);
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+    }
+    
+    void depthLimited() {
+        createdNodes = 0;
+        expandedNodes = 0;
+        solveTime = 0;
+        solutionSteps.clear();
+        visitedStates.clear();
+        solutionFound = true;
+        start = std::clock();
+        if (startState.compare(PUZZLE_GOAL) != 0) {
+            visitedStates.insert(startState);
+            int spacePosition = checkSpacePosition(startState);
+            if (spacePosition >= ROW_SIZE && depthLimitedSearch(startState, UP, 1)) {
+                solutionSteps.push_back(UP);
+            } else if ((spacePosition < PUZZLE_SIZE - ROW_SIZE) && depthLimitedSearch(startState, DOWN, 1)) {
+                solutionSteps.push_back(DOWN);
+            } else if ((spacePosition % ROW_SIZE != 0) && depthLimitedSearch(startState, LEFT, 1)) {
+                solutionSteps.push_back(LEFT);
+            } else if ((spacePosition % ROW_SIZE != ROW_SIZE - 1) && depthLimitedSearch(startState, RIGHT, 1)) {
+                solutionSteps.push_back(RIGHT);
+            } else {
+                solutionFound = false;
+            }
+        }
+        end = std::clock();
+        solveTime = (end - start) / CLOCKS_PER_MS;
+        std::reverse(solutionSteps.begin(),solutionSteps.end());
+        printSolution("depth_limited");
+    }
+
+    bool diterativeDeepeningSearch(std::string state, Moves direction, int start_depth, int max_depth) {
+        if (start_depth > max_depth) {
+            return false;
+        } else {
+            puzzleMove(state, direction);
+            if (state.compare(PUZZLE_GOAL) == 0) {
+                return true;
+            } else if (visitedStates.find(state) != visitedStates.end()) {
+                return false;
+            } else {
+                visitedStates.insert(state);
+                int spacePosition = checkSpacePosition(state);
+                if (spacePosition >= ROW_SIZE && diterativeDeepeningSearch(state, UP, start_depth + 1, max_depth)) {
+                    solutionSteps.push_back(UP);
+                    return true;
+                } else if ((spacePosition < PUZZLE_SIZE - ROW_SIZE) && diterativeDeepeningSearch(state, DOWN, start_depth + 1, max_depth)) {
+                    solutionSteps.push_back(DOWN);
+                    return true;
+                } else if ((spacePosition % ROW_SIZE != 0) && diterativeDeepeningSearch(state, LEFT, start_depth + 1, max_depth)) {
+                    solutionSteps.push_back(LEFT);
+                    return true;
+                } else if ((spacePosition % ROW_SIZE != ROW_SIZE - 1) && diterativeDeepeningSearch(state, RIGHT, start_depth + 1, max_depth)) {
+                    solutionSteps.push_back(RIGHT);
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+    }
+    
+    void iterativeDeepening() {
+        createdNodes = 0;
+        expandedNodes = 0;
+        solveTime = 0;
+        solutionSteps.clear();
+        solutionFound = false;
+        int current_max_depth = 0;
+        start = std::clock();
+        if (startState.compare(PUZZLE_GOAL) != 0) {
+            int spacePosition = checkSpacePosition(startState);
+            while (!solutionFound) {
+                visitedStates.clear();
+                visitedStates.insert(startState);
+                current_max_depth++;
+                if (spacePosition >= ROW_SIZE && diterativeDeepeningSearch(startState, UP, 1, current_max_depth)) {
+                    solutionSteps.push_back(UP);
+                    solutionFound = true;
+                } else if ((spacePosition < PUZZLE_SIZE - ROW_SIZE) && diterativeDeepeningSearch(startState, DOWN, 1, current_max_depth)) {
+                    solutionSteps.push_back(DOWN);
+                    solutionFound = true;
+                } else if ((spacePosition % ROW_SIZE != 0) && diterativeDeepeningSearch(startState, LEFT, 1, current_max_depth)) {
+                    solutionSteps.push_back(LEFT);
+                    solutionFound = true;
+                } else if ((spacePosition % ROW_SIZE != ROW_SIZE - 1) && diterativeDeepeningSearch(startState, RIGHT, 1, current_max_depth)) {
+                    solutionSteps.push_back(RIGHT);
+                    solutionFound = true;
+                }
+            }
+        }
+        end = std::clock();
+        solveTime = (end - start) / CLOCKS_PER_MS;
+        std::reverse(solutionSteps.begin(),solutionSteps.end());
+        printSolution("iterative_deepening");
+    }
+
 };
 
 #endif /* EightPuzzle_h */
