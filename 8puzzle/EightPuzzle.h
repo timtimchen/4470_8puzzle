@@ -12,40 +12,32 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <set>
 #include <time.h>
+#include <algorithm>    // std::reverse
 
 #define CLOCKS_PER_MS (clock_t(1))
 #define PUZZLE_SIZE 9
 #define ROW_SIZE 3
-#define MAX_STEPS 20
+#define MAX_STEPS 40
 
-const char PUZZLE_GOAL[PUZZLE_SIZE] = {
-    '1', '2', '3',
-    '4', '5', '6',
-    '7', '8', '_'
-};
+const std::string PUZZLE_GOAL = "12345678_";
 
 enum Moves { UP, DOWN, LEFT, RIGHT };
 
 class EightPuzzle {
     private:
-    char startState[PUZZLE_SIZE];
+    std::string startState;
+    bool solutionFound;
     std::vector<Moves> solutionSteps;
+    std::set<std::string> visitedStates;
     int createdNodes;
     int expandedNodes;
     int solveTime;  //in milliseconds
 
     public:
     EightPuzzle() {
-        for (int i = 0; i < PUZZLE_SIZE; i++) {
-            startState[i] = PUZZLE_GOAL[i];
-        }
-    }
-    
-    void storeStringToPuzzle(char* puzzleState, std::string input) {
-        for (int i = 0; i < PUZZLE_SIZE; i++) {
-            puzzleState[i] = input.at(i);
-        }
+        startState = PUZZLE_GOAL;
     }
     
     void puzzleInit(std::string fileName) {
@@ -68,7 +60,7 @@ class EightPuzzle {
                 && inputStr.find('7') != std::string::npos
                 && inputStr.find('8') != std::string::npos
                 && inputStr.find('_') != std::string::npos) {
-                storeStringToPuzzle(startState, inputStr);
+                startState = inputStr;
             } else {
                 std::cout << "The file " << fileName << " doesn't contain a correct puzzle state." << std::endl;
             }
@@ -77,22 +69,27 @@ class EightPuzzle {
         }
     }
     
-    std::string checkSolutionSteps(char* state, Moves direction) {
-        std::string moveResult = "";
-        int spacePosition = -1;
-        int switchPosstion = -1;
-        char tempChar;
+    int checkSpacePosition(std::string state) {
+        int position = -1;
         for (int i = 0; i < PUZZLE_SIZE; i++) {
             if (state[i] == '_') {
-                spacePosition = i;
+                position = i;
             }
         }
+        return position;
+    }
+    
+    std::string checkSolutionSteps(std::string& state, Moves direction) {
+        std::string movementResult = "";
+        int switchPosstion = -1;
+        char tempChar;
+        int spacePosition = checkSpacePosition(state);
         switch (direction) {
             case UP:
             if (spacePosition < ROW_SIZE) {
-                moveResult = "STAY ";
+                movementResult = "STAY ";
             } else {
-                moveResult = " UP  ";
+                movementResult = " UP  ";
                 switchPosstion = spacePosition - ROW_SIZE;
                 tempChar = state[switchPosstion];
                 state[switchPosstion] = state[spacePosition];
@@ -101,9 +98,9 @@ class EightPuzzle {
             break;
             case DOWN:
             if (spacePosition >= PUZZLE_SIZE - ROW_SIZE) {
-                moveResult = "STAY ";
+                movementResult = "STAY ";
             } else {
-                moveResult = "DOWN ";
+                movementResult = "DOWN ";
                 switchPosstion = spacePosition + ROW_SIZE;
                 tempChar = state[switchPosstion];
                 state[switchPosstion] = state[spacePosition];
@@ -112,9 +109,9 @@ class EightPuzzle {
             break;
             case LEFT:
             if ((spacePosition % ROW_SIZE) == 0) {
-                moveResult = "STAY ";
+                movementResult = "STAY ";
             } else {
-                moveResult = "LEFT ";
+                movementResult = "LEFT ";
                 switchPosstion = spacePosition - 1;
                 tempChar = state[switchPosstion];
                 state[switchPosstion] = state[spacePosition];
@@ -123,9 +120,9 @@ class EightPuzzle {
             break;
             case RIGHT:
             if ((spacePosition % ROW_SIZE) == ROW_SIZE - 1) {
-                moveResult = "STAY ";
+                movementResult = "STAY ";
             } else {
-                moveResult = "RIGHT";
+                movementResult = "RIGHT";
                 switchPosstion = spacePosition + 1;
                 tempChar = state[switchPosstion];
                 state[switchPosstion] = state[spacePosition];
@@ -133,35 +130,129 @@ class EightPuzzle {
             }
             break;
         }
-        return moveResult;
+        return movementResult;
+    }
+    
+    void puzzleMove(std::string& state, Moves dir) {
+        int switchPosstion = -1;
+        char tempChar;
+        int spacePosition = checkSpacePosition(state);
+        switch (dir) {
+            case UP:
+            if (spacePosition >= ROW_SIZE) {
+                switchPosstion = spacePosition - ROW_SIZE;
+                tempChar = state[switchPosstion];
+                state[switchPosstion] = state[spacePosition];
+                state[spacePosition] = tempChar;
+            }
+            break;
+            case DOWN:
+            if (spacePosition < PUZZLE_SIZE - ROW_SIZE) {
+                switchPosstion = spacePosition + ROW_SIZE;
+                tempChar = state[switchPosstion];
+                state[switchPosstion] = state[spacePosition];
+                state[spacePosition] = tempChar;
+            }
+            break;
+            case LEFT:
+            if ((spacePosition % ROW_SIZE) != 0) {
+                switchPosstion = spacePosition - 1;
+                tempChar = state[switchPosstion];
+                state[switchPosstion] = state[spacePosition];
+                state[spacePosition] = tempChar;
+            }
+            break;
+            case RIGHT:
+            if ((spacePosition % ROW_SIZE) != ROW_SIZE - 1) {
+                switchPosstion = spacePosition + 1;
+                tempChar = state[switchPosstion];
+                state[switchPosstion] = state[spacePosition];
+                state[spacePosition] = tempChar;
+            }
+            break;
+        }
     }
     
     void printSolution(std::string searchName) {
-        char currentState[PUZZLE_SIZE];
-        for (int i = 0; i < PUZZLE_SIZE; i++) {
-            currentState[i] = startState[i];
-        }
+        std::string currentState = startState;
         std::ofstream myfile;
         myfile.open (searchName + "_result.txt");
+        myfile << "search strategy: " << searchName << std::endl << std::endl;
+        myfile << "Expanded Nodes: "  << visitedStates.size() << std::endl << std::endl;
+        myfile << "Solution Steps: "  << solutionSteps.size() << std::endl << std::endl;
         myfile << "                 " << currentState[0] << currentState[1] << currentState[2] << std::endl;
         myfile << "Starting puzzle: " << currentState[3] << currentState[4] << currentState[5] << std::endl;
         myfile << "                 " << currentState[6] << currentState[7] << currentState[8] << std::endl;
-        std::string movement;
-        for (int i = 0; i < solutionSteps.size(); i++) {
-            movement = checkSolutionSteps(currentState, solutionSteps[i]);
-            myfile << std::endl;
-            myfile << "                 " << currentState[0] << currentState[1] << currentState[2] << std::endl;
-            myfile << " --- " << movement <<" --->  " << currentState[3] << currentState[4] << currentState[5] << std::endl;
-            myfile << "                 " << currentState[6] << currentState[7] << currentState[8] << std::endl;
+        if (!solutionFound) {
+            myfile << std::endl << "No solution was found by this search strategy." << std::endl;
+        } else {
+            std::string movement;
+            for (int i = 0; i < solutionSteps.size(); i++) {
+                movement = checkSolutionSteps(currentState, solutionSteps[i]);
+                myfile << std::endl;
+                myfile << "                 " << currentState[0] << currentState[1] << currentState[2] << std::endl;
+                myfile << " --- " << movement <<" --->  " << currentState[3] << currentState[4] << currentState[5] << std::endl;
+                myfile << "                 " << currentState[6] << currentState[7] << currentState[8] << std::endl;
+            }
+
         }
         myfile.close();
     }
     
+    bool depthFirstSearch(std::string state, Moves direction, int depth) {
+        if (depth > MAX_STEPS) {
+            return false;
+        } else {
+            puzzleMove(state, direction);
+            if (state.compare(PUZZLE_GOAL) == 0) {
+                return true;
+            } else if (visitedStates.find(state) != visitedStates.end()) {
+                return false;
+            } else {
+                visitedStates.insert(state);
+                int spacePosition = checkSpacePosition(state);
+                if ((spacePosition % ROW_SIZE != ROW_SIZE - 1) && depthFirstSearch(state, RIGHT, depth + 1)) {
+                    solutionSteps.push_back(RIGHT);
+                    return true;
+                } else if ((spacePosition < PUZZLE_SIZE - ROW_SIZE) && depthFirstSearch(state, DOWN, depth + 1)) {
+                    solutionSteps.push_back(DOWN);
+                    return true;
+                } else if ((spacePosition % ROW_SIZE != 0) && depthFirstSearch(state, LEFT, depth + 1)) {
+                    solutionSteps.push_back(LEFT);
+                    return true;
+                } else if (spacePosition >= ROW_SIZE && depthFirstSearch(state, UP, depth + 1)) {
+                    solutionSteps.push_back(UP);
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+    }
+
     void depthFirst() {
         createdNodes = 0;
         expandedNodes = 0;
         solveTime = 0;
         solutionSteps.clear();
+        visitedStates.clear();
+        solutionFound = true;
+        if (startState.compare(PUZZLE_GOAL) != 0) {
+            visitedStates.insert(startState);
+            int spacePosition = checkSpacePosition(startState);
+            if ((spacePosition % ROW_SIZE != ROW_SIZE - 1) && depthFirstSearch(startState, RIGHT, 1)) {
+                solutionSteps.push_back(RIGHT);
+            } else if ((spacePosition < PUZZLE_SIZE - ROW_SIZE) && depthFirstSearch(startState, DOWN, 1)) {
+                solutionSteps.push_back(DOWN);
+            } else if ((spacePosition % ROW_SIZE != 0) && depthFirstSearch(startState, LEFT, 1)) {
+                solutionSteps.push_back(LEFT);
+            } else if (spacePosition >= ROW_SIZE && depthFirstSearch(startState, UP, 1)) {
+                solutionSteps.push_back(UP);
+            } else {
+                solutionFound = false;
+            }
+        }
+        std::reverse(solutionSteps.begin(),solutionSteps.end());
         printSolution("depth_first");
     }
 };
