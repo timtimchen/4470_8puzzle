@@ -464,6 +464,143 @@ class EightPuzzle {
         printSolution("iterative_deepening");
     }
 
+    void bidirectionalSearch() {
+        createdNodes = 0;
+        expandedNodes = 0;
+        solveTime = 0;
+        solutionSteps.clear();
+        solutionFound = false;
+        std::queue<Nodes> startSideCheckList;
+        std::queue<Nodes> goalSideCheckList;
+        std::queue<Nodes> startSideWaitList;
+        std::queue<Nodes> goalSideWaitList;
+        std::map<std::string, std::vector<Moves>> startConnectedNodes;
+        std::map<std::string, std::vector<Moves>> goalConnectedNodes;
+        start = std::clock();
+        if (startState.compare(PUZZLE_GOAL) != 0) {
+            std::vector<Moves> path;
+            Nodes startNode{startState, path};
+            Nodes goalNode{PUZZLE_GOAL, path};
+            startSideCheckList.push(startNode);
+            goalSideCheckList.push(goalNode);
+            while (!solutionFound && !(startSideCheckList.empty() && goalSideCheckList.empty())) {
+                // check start side
+                while (!startSideCheckList.empty()) {
+                    if (goalConnectedNodes.find(startSideCheckList.front().currentState) != goalConnectedNodes.end()) {
+                        // find a solution path!
+                        solutionFound = true;
+                        if (solutionSteps.size() == 0 || (solutionSteps.size() > startSideCheckList.front().currentPath.size() +  goalConnectedNodes[startSideCheckList.front().currentState].size())) {
+                            solutionSteps.clear();
+                            std::copy(startSideCheckList.front().currentPath.begin(), startSideCheckList.front().currentPath.end(), back_inserter(solutionSteps));
+                            std::reverse(goalConnectedNodes[startSideCheckList.front().currentState].begin(), goalConnectedNodes[startSideCheckList.front().currentState].end());
+                            std::copy(goalConnectedNodes[startSideCheckList.front().currentState].begin(), goalConnectedNodes[startSideCheckList.front().currentState].end(), back_inserter(solutionSteps));
+                        }
+                    } else {
+                        // if not find a solution path, put it in the start connected set
+                        startConnectedNodes.insert(std::pair<std::string, std::vector<Moves>>(startSideCheckList.front().currentState,  startSideCheckList.front().currentPath) );
+                        startSideWaitList.push(startSideCheckList.front());
+                    }
+                    startSideCheckList.pop();
+                }
+                // check goal side
+                while (!goalSideCheckList.empty()) {
+                    if (startConnectedNodes.find(goalSideCheckList.front().currentState) != startConnectedNodes.end()) {
+                        // find a solution path!
+                        solutionFound = true;
+                        if (solutionSteps.size() == 0 || (solutionSteps.size() > goalSideCheckList.front().currentPath.size() +  startConnectedNodes[goalSideCheckList.front().currentState].size())) {
+                            solutionSteps.clear();
+                            std::copy(startConnectedNodes[goalSideCheckList.front().currentState].begin(), startConnectedNodes[goalSideCheckList.front().currentState].end(), back_inserter(solutionSteps));
+                            std::reverse(goalSideCheckList.front().currentPath.begin(), goalSideCheckList.front().currentPath.end());
+                            std::copy(goalSideCheckList.front().currentPath.begin(), goalSideCheckList.front().currentPath.end(), back_inserter(solutionSteps));
+                        }
+                    } else {
+                        // if not find a solution path, put it in the start connected set
+                        goalConnectedNodes.insert(std::pair<std::string, std::vector<Moves>>(goalSideCheckList.front().currentState,  goalSideCheckList.front().currentPath) );
+                        goalSideWaitList.push(goalSideCheckList.front());
+                    }
+                    goalSideCheckList.pop();
+                }
+                // expand start side
+                while (!solutionFound && !startSideWaitList.empty()) {
+                    int spacePosition = checkSpacePosition(startSideWaitList.front().currentState);
+                    if (spacePosition >= ROW_SIZE) {
+                        Nodes newNode{startSideWaitList.front().currentState, startSideWaitList.front().currentPath};
+                        puzzleMove(newNode.currentState, UP);
+                        if (startConnectedNodes.find(newNode.currentState) == startConnectedNodes.end()) {
+                            newNode.currentPath.push_back(UP);
+                            startSideCheckList.push(newNode);
+                        }
+                    }
+                    if (spacePosition < PUZZLE_SIZE - ROW_SIZE) {
+                        Nodes newNode{startSideWaitList.front().currentState, startSideWaitList.front().currentPath};
+                        puzzleMove(newNode.currentState, DOWN);
+                        if (startConnectedNodes.find(newNode.currentState) == startConnectedNodes.end()) {
+                            newNode.currentPath.push_back(DOWN);
+                            startSideCheckList.push(newNode);
+                        }
+                    }
+                    if (spacePosition % ROW_SIZE != 0) {
+                        Nodes newNode{startSideWaitList.front().currentState, startSideWaitList.front().currentPath};
+                        puzzleMove(newNode.currentState, LEFT);
+                        if (startConnectedNodes.find(newNode.currentState) == startConnectedNodes.end()) {
+                            newNode.currentPath.push_back(LEFT);
+                            startSideCheckList.push(newNode);
+                        }
+                    }
+                    if (spacePosition % ROW_SIZE != ROW_SIZE - 1) {
+                        Nodes newNode{startSideWaitList.front().currentState, startSideWaitList.front().currentPath};
+                        puzzleMove(newNode.currentState, RIGHT);
+                        if (startConnectedNodes.find(newNode.currentState) == startConnectedNodes.end()) {
+                            newNode.currentPath.push_back(RIGHT);
+                            startSideCheckList.push(newNode);
+                        }
+                    }
+                    startSideWaitList.pop();
+                }
+                // expand goal side
+                while (!solutionFound && !goalSideWaitList.empty()) {
+                    int spacePosition = checkSpacePosition(goalSideWaitList.front().currentState);
+                    if (spacePosition >= ROW_SIZE) {
+                        Nodes newNode{goalSideWaitList.front().currentState, goalSideWaitList.front().currentPath};
+                        puzzleMove(newNode.currentState, UP);
+                        if (goalConnectedNodes.find(newNode.currentState) == goalConnectedNodes.end()) {
+                            newNode.currentPath.push_back(DOWN);
+                            goalSideCheckList.push(newNode);
+                        }
+                    }
+                    if (spacePosition < PUZZLE_SIZE - ROW_SIZE) {
+                        Nodes newNode{goalSideWaitList.front().currentState, goalSideWaitList.front().currentPath};
+                        puzzleMove(newNode.currentState, DOWN);
+                        if (goalConnectedNodes.find(newNode.currentState) == goalConnectedNodes.end()) {
+                            newNode.currentPath.push_back(UP);
+                            goalSideCheckList.push(newNode);
+                        }
+                    }
+                    if (spacePosition % ROW_SIZE != 0) {
+                        Nodes newNode{goalSideWaitList.front().currentState, goalSideWaitList.front().currentPath};
+                        puzzleMove(newNode.currentState, LEFT);
+                        if (goalConnectedNodes.find(newNode.currentState) == goalConnectedNodes.end()) {
+                            newNode.currentPath.push_back(RIGHT);
+                            goalSideCheckList.push(newNode);
+                        }
+                    }
+                    if (spacePosition % ROW_SIZE != ROW_SIZE - 1) {
+                        Nodes newNode{goalSideWaitList.front().currentState, goalSideWaitList.front().currentPath};
+                        puzzleMove(newNode.currentState, RIGHT);
+                        if (goalConnectedNodes.find(newNode.currentState) == goalConnectedNodes.end()) {
+                            newNode.currentPath.push_back(LEFT);
+                            goalSideCheckList.push(newNode);
+                        }
+                    }
+                    goalSideWaitList.pop();
+                }
+            }
+        }
+        end = std::clock();
+        solveTime = (end - start) / CLOCKS_PER_MS;
+        printSolution("bidirectional_search");
+    }
+    
 };
 
 #endif /* EightPuzzle_h */
