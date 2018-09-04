@@ -12,7 +12,6 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
-#include <set>
 #include <queue>
 #include <stack>
 #include <map>
@@ -23,7 +22,7 @@
 #define CLOCKS_PER_MS (clock_t(1))
 #define PUZZLE_SIZE 9
 #define ROW_SIZE 3
-#define MAX_STEPS 100
+#define MAX_STEPS 50
 
 const std::string PUZZLE_GOAL = "12345678_";
 
@@ -39,7 +38,7 @@ class EightPuzzle {
     std::string startState;
     bool solutionFound;
     std::vector<Moves> solutionSteps;
-    std::set<std::string> visitedStates;
+    std::map<std::string, int> visitedStates;  // record visited node state and the current cost to reach it
     int createdNodes;
     int expandedNodes;
     std::clock_t clock();
@@ -222,7 +221,6 @@ class EightPuzzle {
         std::queue<Nodes> nodeQueue;
         start = std::clock();
         if (startState.compare(PUZZLE_GOAL) != 0) {
-            visitedStates.insert(startState);
             std::vector<Moves> path;
             Nodes startNode{startState, path};
             nodeQueue.push(startNode);
@@ -231,7 +229,8 @@ class EightPuzzle {
                     solutionFound = true;
                     solutionSteps = nodeQueue.front().currentPath;
                 } else {
-                    visitedStates.insert(nodeQueue.front().currentState);
+                    // insert current node to vistied map, current cost is always minimum so being ignored in BFS
+                    visitedStates.insert(std::pair<std::string, int>(nodeQueue.front().currentState, 0));
                     int spacePosition = checkSpacePosition(nodeQueue.front().currentState);
                     if (spacePosition >= ROW_SIZE) {
                         Nodes newNode{nodeQueue.front().currentState, nodeQueue.front().currentPath};
@@ -284,7 +283,6 @@ class EightPuzzle {
         std::stack<Nodes> nodeStack;
         start = std::clock();
         if (startState.compare(PUZZLE_GOAL) != 0) {
-            visitedStates.insert(startState);
             std::vector<Moves> path;
             Nodes startNode{startState, path};
             nodeStack.push(startNode);
@@ -296,7 +294,7 @@ class EightPuzzle {
                     std::string currentState =nodeStack.top().currentState;
                     std::vector<Moves> currentPath = nodeStack.top().currentPath;
                     nodeStack.pop();
-                    visitedStates.insert(currentState);
+                    visitedStates.insert(std::pair<std::string, int>(currentState, 0));
                     int spacePosition = checkSpacePosition(currentState);
                     if (spacePosition >= ROW_SIZE) {
                         Nodes newNode{currentState, currentPath};
@@ -345,10 +343,11 @@ class EightPuzzle {
             puzzleMove(state, direction);
             if (state.compare(PUZZLE_GOAL) == 0) {
                 return true;
-            } else if (visitedStates.find(state) != visitedStates.end()) {
+            } else if (visitedStates.find(state) != visitedStates.end() && visitedStates[state] <= depth) {
                 return false;
             } else {
-                visitedStates.insert(state);
+                // insert a new visited node, or update its cost if already existed
+                visitedStates[state] = depth;
                 int spacePosition = checkSpacePosition(state);
                 if (spacePosition >= ROW_SIZE && depthLimitedSearch(state, UP, depth + 1)) {
                     solutionSteps.push_back(UP);
@@ -378,7 +377,7 @@ class EightPuzzle {
         solutionFound = true;
         start = std::clock();
         if (startState.compare(PUZZLE_GOAL) != 0) {
-            visitedStates.insert(startState);
+            visitedStates.insert(std::pair<std::string, int>(startState, 0));
             int spacePosition = checkSpacePosition(startState);
             if (spacePosition >= ROW_SIZE && depthLimitedSearch(startState, UP, 1)) {
                 solutionSteps.push_back(UP);
@@ -398,28 +397,29 @@ class EightPuzzle {
         printSolution("depth_limited");
     }
 
-    bool diterativeDeepeningSearch(std::string state, Moves direction, int start_depth, int max_depth) {
+    bool iterativeDeepeningSearch(std::string state, Moves direction, int start_depth, int max_depth) {
         if (start_depth > max_depth) {
             return false;
         } else {
             puzzleMove(state, direction);
             if (state.compare(PUZZLE_GOAL) == 0) {
                 return true;
-            } else if (visitedStates.find(state) != visitedStates.end()) {
+            } else if (visitedStates.find(state) != visitedStates.end() && visitedStates[state] <= start_depth) {
                 return false;
             } else {
-                visitedStates.insert(state);
+                // insert a new visited node, or update its cost if already existed
+                visitedStates[state] = start_depth;
                 int spacePosition = checkSpacePosition(state);
-                if (spacePosition >= ROW_SIZE && diterativeDeepeningSearch(state, UP, start_depth + 1, max_depth)) {
+                if (spacePosition >= ROW_SIZE && iterativeDeepeningSearch(state, UP, start_depth + 1, max_depth)) {
                     solutionSteps.push_back(UP);
                     return true;
-                } else if ((spacePosition < PUZZLE_SIZE - ROW_SIZE) && diterativeDeepeningSearch(state, DOWN, start_depth + 1, max_depth)) {
+                } else if ((spacePosition < PUZZLE_SIZE - ROW_SIZE) && iterativeDeepeningSearch(state, DOWN, start_depth + 1, max_depth)) {
                     solutionSteps.push_back(DOWN);
                     return true;
-                } else if ((spacePosition % ROW_SIZE != 0) && diterativeDeepeningSearch(state, LEFT, start_depth + 1, max_depth)) {
+                } else if ((spacePosition % ROW_SIZE != 0) && iterativeDeepeningSearch(state, LEFT, start_depth + 1, max_depth)) {
                     solutionSteps.push_back(LEFT);
                     return true;
-                } else if ((spacePosition % ROW_SIZE != ROW_SIZE - 1) && diterativeDeepeningSearch(state, RIGHT, start_depth + 1, max_depth)) {
+                } else if ((spacePosition % ROW_SIZE != ROW_SIZE - 1) && iterativeDeepeningSearch(state, RIGHT, start_depth + 1, max_depth)) {
                     solutionSteps.push_back(RIGHT);
                     return true;
                 } else {
@@ -441,18 +441,18 @@ class EightPuzzle {
             int spacePosition = checkSpacePosition(startState);
             while (!solutionFound) {
                 visitedStates.clear();
-                visitedStates.insert(startState);
+                visitedStates.insert(std::pair<std::string, int>(startState, 0));
                 current_max_depth++;
-                if (spacePosition >= ROW_SIZE && diterativeDeepeningSearch(startState, UP, 1, current_max_depth)) {
+                if (spacePosition >= ROW_SIZE && iterativeDeepeningSearch(startState, UP, 1, current_max_depth)) {
                     solutionSteps.push_back(UP);
                     solutionFound = true;
-                } else if ((spacePosition < PUZZLE_SIZE - ROW_SIZE) && diterativeDeepeningSearch(startState, DOWN, 1, current_max_depth)) {
+                } else if ((spacePosition < PUZZLE_SIZE - ROW_SIZE) && iterativeDeepeningSearch(startState, DOWN, 1, current_max_depth)) {
                     solutionSteps.push_back(DOWN);
                     solutionFound = true;
-                } else if ((spacePosition % ROW_SIZE != 0) && diterativeDeepeningSearch(startState, LEFT, 1, current_max_depth)) {
+                } else if ((spacePosition % ROW_SIZE != 0) && iterativeDeepeningSearch(startState, LEFT, 1, current_max_depth)) {
                     solutionSteps.push_back(LEFT);
                     solutionFound = true;
-                } else if ((spacePosition % ROW_SIZE != ROW_SIZE - 1) && diterativeDeepeningSearch(startState, RIGHT, 1, current_max_depth)) {
+                } else if ((spacePosition % ROW_SIZE != ROW_SIZE - 1) && iterativeDeepeningSearch(startState, RIGHT, 1, current_max_depth)) {
                     solutionSteps.push_back(RIGHT);
                     solutionFound = true;
                 }
