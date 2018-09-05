@@ -17,6 +17,7 @@
 #include <map>
 #include <cstdio>
 #include <ctime>
+#include <cmath>
 #include <algorithm>    // std::reverse
 
 #define CLOCKS_PER_MS (clock_t(1000))
@@ -31,6 +32,15 @@ enum Moves { UP, DOWN, LEFT, RIGHT };
 struct Nodes {
     std::string currentState;
     std::vector<Moves> currentPath;
+    int distance;
+};
+
+struct checkByDistance
+{
+    bool operator()(const Nodes& lhs, const Nodes& rhs) const
+    {
+        return lhs.distance >= rhs.distance;
+    }
 };
 
 class EightPuzzle {
@@ -250,7 +260,7 @@ class EightPuzzle {
         start = std::clock();
         if (startState.compare(PUZZLE_GOAL) != 0) {
             std::vector<Moves> path;
-            Nodes startNode{startState, path};
+            Nodes startNode{startState, path, 0};
             nodeQueue.push(startNode);  // initial the checking queue
             while (!solutionFound && !nodeQueue.empty()) {
                 if (nodeQueue.front().currentState.compare(PUZZLE_GOAL) == 0) {
@@ -259,12 +269,12 @@ class EightPuzzle {
                     solutionSteps = nodeQueue.front().currentPath;
                 } else {
                     // if not found a solution, add its child nodes into the queue
-                    // insert current node to vistied map, current cost is always minimum so being ignored in BFS
+                    // insert current node to vistied map
                     visitedStates.insert(std::pair<std::string, int>(nodeQueue.front().currentState, 0));
                     int spacePosition = checkSpacePosition(nodeQueue.front().currentState);
                     if (spacePosition >= ROW_SIZE) {
                         // if that state can move 'up', add the 'up' state as its child node. Similiarly below.
-                        Nodes newNode{nodeQueue.front().currentState, nodeQueue.front().currentPath};
+                        Nodes newNode{nodeQueue.front().currentState, nodeQueue.front().currentPath, 0};
                         puzzleMove(newNode.currentState, UP);
                         if (visitedStates.find(newNode.currentState) == visitedStates.end()) {
                             // if the child node is not a visited state, add it to the queue.
@@ -273,7 +283,7 @@ class EightPuzzle {
                         }
                     }
                     if (spacePosition < PUZZLE_SIZE - ROW_SIZE) {
-                        Nodes newNode{nodeQueue.front().currentState, nodeQueue.front().currentPath};
+                        Nodes newNode{nodeQueue.front().currentState, nodeQueue.front().currentPath, 0};
                         puzzleMove(newNode.currentState, DOWN);
                         if (visitedStates.find(newNode.currentState) == visitedStates.end()) {
                             newNode.currentPath.push_back(DOWN);
@@ -281,7 +291,7 @@ class EightPuzzle {
                         }
                     }
                     if (spacePosition % ROW_SIZE != 0) {
-                        Nodes newNode{nodeQueue.front().currentState, nodeQueue.front().currentPath};
+                        Nodes newNode{nodeQueue.front().currentState, nodeQueue.front().currentPath, 0};
                         puzzleMove(newNode.currentState, LEFT);
                         if (visitedStates.find(newNode.currentState) == visitedStates.end()) {
                             newNode.currentPath.push_back(LEFT);
@@ -289,7 +299,7 @@ class EightPuzzle {
                         }
                     }
                     if (spacePosition % ROW_SIZE != ROW_SIZE - 1) {
-                        Nodes newNode{nodeQueue.front().currentState, nodeQueue.front().currentPath};
+                        Nodes newNode{nodeQueue.front().currentState, nodeQueue.front().currentPath, 0};
                         puzzleMove(newNode.currentState, RIGHT);
                         if (visitedStates.find(newNode.currentState) == visitedStates.end()) {
                             newNode.currentPath.push_back(RIGHT);
@@ -322,7 +332,7 @@ class EightPuzzle {
         start = std::clock();
         if (startState.compare(PUZZLE_GOAL) != 0) {
             std::vector<Moves> path;
-            Nodes startNode{startState, path};
+            Nodes startNode{startState, path, 0};
             nodeStack.push(startNode);  // initial the checking stack
             while (!solutionFound && !nodeStack.empty()) {
                 if (nodeStack.top().currentState.compare(PUZZLE_GOAL) == 0) {
@@ -334,12 +344,12 @@ class EightPuzzle {
                     std::string currentState =nodeStack.top().currentState;
                     std::vector<Moves> currentPath = nodeStack.top().currentPath;
                     nodeStack.pop();  // pop the top node first
-                    // insert current node to vistied map current cost is not checking in pure DFS
+                    // insert current node to vistied map
                     visitedStates.insert(std::pair<std::string, int>(currentState, 0));
                     int spacePosition = checkSpacePosition(currentState);
                     if (spacePosition >= ROW_SIZE) {
                         // if that state can move 'up', add the 'up' state as its child node. Similiarly below.
-                        Nodes newNode{currentState, currentPath};
+                        Nodes newNode{currentState, currentPath, 0};
                         puzzleMove(newNode.currentState, UP);
                         if (visitedStates.find(newNode.currentState) == visitedStates.end()) {
                             // if the child node is a not visited state, add it to the stack.
@@ -348,7 +358,7 @@ class EightPuzzle {
                         }
                     }
                     if (spacePosition < PUZZLE_SIZE - ROW_SIZE) {
-                        Nodes newNode{currentState, currentPath};
+                        Nodes newNode{currentState, currentPath, 0};
                         puzzleMove(newNode.currentState, DOWN);
                         if (visitedStates.find(newNode.currentState) == visitedStates.end()) {
                             newNode.currentPath.push_back(DOWN);
@@ -356,7 +366,7 @@ class EightPuzzle {
                         }
                     }
                     if (spacePosition % ROW_SIZE != 0) {
-                        Nodes newNode{currentState, currentPath};
+                        Nodes newNode{currentState, currentPath, 0};
                         puzzleMove(newNode.currentState, LEFT);
                         if (visitedStates.find(newNode.currentState) == visitedStates.end()) {
                             newNode.currentPath.push_back(LEFT);
@@ -364,7 +374,7 @@ class EightPuzzle {
                         }
                     }
                     if (spacePosition % ROW_SIZE != ROW_SIZE - 1) {
-                        Nodes newNode{currentState, currentPath};
+                        Nodes newNode{currentState, currentPath, 0};
                         puzzleMove(newNode.currentState, RIGHT);
                         if (visitedStates.find(newNode.currentState) == visitedStates.end()) {
                             newNode.currentPath.push_back(RIGHT);
@@ -567,8 +577,8 @@ class EightPuzzle {
         start = std::clock();
         if (startState.compare(PUZZLE_GOAL) != 0) {
             std::vector<Moves> path;
-            Nodes startNode{startState, path};
-            Nodes goalNode{PUZZLE_GOAL, path};
+            Nodes startNode{startState, path, 0};
+            Nodes goalNode{PUZZLE_GOAL, path, 0};
             // initial two checking lists
             startSideCheckList.push(startNode);
             goalSideCheckList.push(goalNode);
@@ -630,7 +640,7 @@ class EightPuzzle {
                     int spacePosition = checkSpacePosition(startSideWaitList.front().currentState);
                     if (spacePosition >= ROW_SIZE) {
                         // if the puzzle state can go 'up', move up and put it in the checklist. Similiar below.
-                        Nodes newNode{startSideWaitList.front().currentState, startSideWaitList.front().currentPath};
+                        Nodes newNode{startSideWaitList.front().currentState, startSideWaitList.front().currentPath, 0};
                         puzzleMove(newNode.currentState, UP);
                         if (startConnectedNodes.find(newNode.currentState) == startConnectedNodes.end()) {
                             // if the new node is not already connected, add it.
@@ -639,7 +649,7 @@ class EightPuzzle {
                         }
                     }
                     if (spacePosition < PUZZLE_SIZE - ROW_SIZE) {
-                        Nodes newNode{startSideWaitList.front().currentState, startSideWaitList.front().currentPath};
+                        Nodes newNode{startSideWaitList.front().currentState, startSideWaitList.front().currentPath, 0};
                         puzzleMove(newNode.currentState, DOWN);
                         if (startConnectedNodes.find(newNode.currentState) == startConnectedNodes.end()) {
                             newNode.currentPath.push_back(DOWN);
@@ -647,7 +657,7 @@ class EightPuzzle {
                         }
                     }
                     if (spacePosition % ROW_SIZE != 0) {
-                        Nodes newNode{startSideWaitList.front().currentState, startSideWaitList.front().currentPath};
+                        Nodes newNode{startSideWaitList.front().currentState, startSideWaitList.front().currentPath, 0};
                         puzzleMove(newNode.currentState, LEFT);
                         if (startConnectedNodes.find(newNode.currentState) == startConnectedNodes.end()) {
                             newNode.currentPath.push_back(LEFT);
@@ -655,7 +665,7 @@ class EightPuzzle {
                         }
                     }
                     if (spacePosition % ROW_SIZE != ROW_SIZE - 1) {
-                        Nodes newNode{startSideWaitList.front().currentState, startSideWaitList.front().currentPath};
+                        Nodes newNode{startSideWaitList.front().currentState, startSideWaitList.front().currentPath, 0};
                         puzzleMove(newNode.currentState, RIGHT);
                         if (startConnectedNodes.find(newNode.currentState) == startConnectedNodes.end()) {
                             newNode.currentPath.push_back(RIGHT);
@@ -664,12 +674,12 @@ class EightPuzzle {
                     }
                     startSideWaitList.pop();
                 }
-                // expand goal side, , all the new nodes would be put in the goal checking list
+                // expand goal side, all the new nodes would be put in the goal checking list
                 while (!solutionFound && !goalSideWaitList.empty()) {
                     int spacePosition = checkSpacePosition(goalSideWaitList.front().currentState);
                     if (spacePosition >= ROW_SIZE) {
                         // if the puzzle state can go 'up', move up and put it in the checklist. Similiar below.
-                        Nodes newNode{goalSideWaitList.front().currentState, goalSideWaitList.front().currentPath};
+                        Nodes newNode{goalSideWaitList.front().currentState, goalSideWaitList.front().currentPath, 0};
                         puzzleMove(newNode.currentState, UP);
                         if (goalConnectedNodes.find(newNode.currentState) == goalConnectedNodes.end()) {
                             // if the new node is not already connected, add it.
@@ -678,7 +688,7 @@ class EightPuzzle {
                         }
                     }
                     if (spacePosition < PUZZLE_SIZE - ROW_SIZE) {
-                        Nodes newNode{goalSideWaitList.front().currentState, goalSideWaitList.front().currentPath};
+                        Nodes newNode{goalSideWaitList.front().currentState, goalSideWaitList.front().currentPath, 0};
                         puzzleMove(newNode.currentState, DOWN);
                         if (goalConnectedNodes.find(newNode.currentState) == goalConnectedNodes.end()) {
                             newNode.currentPath.push_back(UP);
@@ -686,7 +696,7 @@ class EightPuzzle {
                         }
                     }
                     if (spacePosition % ROW_SIZE != 0) {
-                        Nodes newNode{goalSideWaitList.front().currentState, goalSideWaitList.front().currentPath};
+                        Nodes newNode{goalSideWaitList.front().currentState, goalSideWaitList.front().currentPath, 0};
                         puzzleMove(newNode.currentState, LEFT);
                         if (goalConnectedNodes.find(newNode.currentState) == goalConnectedNodes.end()) {
                             newNode.currentPath.push_back(RIGHT);
@@ -694,7 +704,7 @@ class EightPuzzle {
                         }
                     }
                     if (spacePosition % ROW_SIZE != ROW_SIZE - 1) {
-                        Nodes newNode{goalSideWaitList.front().currentState, goalSideWaitList.front().currentPath};
+                        Nodes newNode{goalSideWaitList.front().currentState, goalSideWaitList.front().currentPath, 0};
                         puzzleMove(newNode.currentState, RIGHT);
                         if (goalConnectedNodes.find(newNode.currentState) == goalConnectedNodes.end()) {
                             newNode.currentPath.push_back(LEFT);
@@ -710,6 +720,197 @@ class EightPuzzle {
         printSolution("bidirectional_search");
     }
     
+    /**
+     * a Manhattan distance heuristic function.
+     * return an integer of total steps of each tile moving to the right place
+     */
+    int heuisticManhattan(std::string state) {
+        int score = 0;
+        for (int i = 0; i < PUZZLE_SIZE; i++) {
+            switch (state[i]) {
+                case '1':
+                // i representing the position of '1'-tile, the right position should be 0
+                score += abs(i % ROW_SIZE) + abs(i / ROW_SIZE);
+                break;
+                case '2':
+                // i representing the position of '2'-tile, the right position should be 1
+                score += abs(i % ROW_SIZE - 1) + abs(i / ROW_SIZE);
+                break;
+                case '3':
+                // i representing the position of '3'-tile, the right position should be 2
+                score += abs(i % ROW_SIZE - 2) + abs(i / ROW_SIZE);
+                break;
+                case '4':
+                // i representing the position of '4'-tile, the right position should be 3
+                score += abs(i % ROW_SIZE) + abs(i / ROW_SIZE - 1);
+                break;
+                case '5':
+                // i representing the position of '5'-tile, the right position should be 4
+                score += abs(i % ROW_SIZE - 1) + abs(i / ROW_SIZE - 1);
+                break;
+                case '6':
+                // i representing the position of '3'-tile, the right position should be 2
+                score += abs(i % ROW_SIZE - 2) + abs(i / ROW_SIZE - 1);
+                break;
+                case '7':
+                // i representing the position of '1'-tile, the right position should be 0
+                score += abs(i % ROW_SIZE) + abs(i / ROW_SIZE - 2);
+                break;
+                case '8':
+                // i representing the position of '2'-tile, the right position should be 1
+                score += abs(i % ROW_SIZE - 1) + abs(i / ROW_SIZE - 2);
+                break;
+            }
+        }
+        return score;
+    }
+
+    /**
+     * a recursive called function for Greedy Search based on the Manhanttan distance heuristic function.
+     * go to the best guess first, if it doesn't work, go to the second
+     * return ture if found a solution in this movement
+     */
+    bool greedySearch(std::string state) {
+        if (state.compare(PUZZLE_GOAL) == 0) {
+            return true;
+        } else {
+            // priority node queue, smaller dirstance node will pop first
+            std::priority_queue<Nodes, std::vector<Nodes>, checkByDistance> priorQueue;
+            visitedStates.insert(std::pair<std::string, int>(state, 0));
+            // check all direction and put them in a priority of Manhattan heuistic
+            int spacePosition = checkSpacePosition(state);
+            std::vector<Moves> currentPath;
+            std::string currentState;
+            if (spacePosition >= ROW_SIZE) {
+                // if the puzzle state can go 'up', move up and check if it's visited. Similiar below.
+                currentState = state;
+                puzzleMove(currentState, UP);
+                if (visitedStates.find(currentState) == visitedStates.end()) {
+                    // if the new node is not already visited, add it.
+                    Nodes newNode{currentState, currentPath, heuisticManhattan(currentState)};
+                    newNode.currentPath.push_back(UP);
+                    priorQueue.push(newNode);
+                }
+            }
+            if (spacePosition < PUZZLE_SIZE - ROW_SIZE) {
+                currentState = state;
+                puzzleMove(currentState, DOWN);
+                if (visitedStates.find(currentState) == visitedStates.end()) {
+                    // if the new node is not already visited, add it.
+                    Nodes newNode{currentState, currentPath, heuisticManhattan(currentState)};
+                    newNode.currentPath.push_back(DOWN);
+                    priorQueue.push(newNode);
+                }
+            }
+            if (spacePosition % ROW_SIZE != 0) {
+                currentState = state;
+                puzzleMove(currentState, LEFT);
+                if (visitedStates.find(currentState) == visitedStates.end()) {
+                    // if the new node is not already visited, add it.
+                    Nodes newNode{currentState, currentPath, heuisticManhattan(currentState)};
+                    newNode.currentPath.push_back(LEFT);  // notice the direction would be the opposite way
+                    priorQueue.push(newNode);
+                }
+            }
+            if (spacePosition % ROW_SIZE != ROW_SIZE - 1) {
+                currentState = state;
+                puzzleMove(currentState, RIGHT);
+                if (visitedStates.find(currentState) == visitedStates.end()) {
+                    // if the new node is not already visited, add it.
+                    Nodes newNode{currentState, currentPath, heuisticManhattan(currentState)};
+                    newNode.currentPath.push_back(RIGHT);  // notice the direction would be the opposite way
+                    priorQueue.push(newNode);
+                }
+            }
+            while (!solutionFound && !priorQueue.empty()) {
+                if (greedySearch(priorQueue.top().currentState)) {
+                    // found a solution here!
+                    solutionFound = true;
+                    solutionSteps.push_back(priorQueue.top().currentPath[0]);
+                }
+                priorQueue.pop();
+            }
+            return solutionFound;
+        }
+    }
+
+    /**
+     * conduct Greedy Search to the puzzle start state, store the result the vector 'solutionSteps'.
+     * based on Manhattan heuistic function to calculate the best node first to be expanded.
+     * the vector would be empty if no solution was found.
+     * print out the result to a txt file at the end.
+     */
+    void greedy() {
+        createdNodes = 0;
+        expandedNodes = 0;
+        solveTime = 0;
+        solutionSteps.clear();
+        solutionFound = false;
+        // priority node queue, smaller dirstance node will pop first
+        std::priority_queue<Nodes, std::vector<Nodes>, checkByDistance> priorQueue;
+        start = std::clock();
+        if (startState.compare(PUZZLE_GOAL) != 0) {
+            visitedStates.insert(std::pair<std::string, int>(startState, 0));
+            // check all direction and put them in a priority of Manhattan heuistic
+            int spacePosition = checkSpacePosition(startState);
+            std::vector<Moves> currentPath;
+            std::string currentState;
+            if (spacePosition >= ROW_SIZE) {
+                // if the puzzle state can go 'up', move up and check if it's visited. Similiar below.
+                currentState = startState;
+                puzzleMove(currentState, UP);
+                if (visitedStates.find(currentState) == visitedStates.end()) {
+                    // if the new node is not already visited, add it.
+                    Nodes newNode{currentState, currentPath, heuisticManhattan(currentState)};
+                    newNode.currentPath.push_back(UP);
+                    priorQueue.push(newNode);
+                }
+            }
+            if (spacePosition < PUZZLE_SIZE - ROW_SIZE) {
+                currentState = startState;
+                puzzleMove(currentState, DOWN);
+                if (visitedStates.find(currentState) == visitedStates.end()) {
+                    // if the new node is not already visited, add it.
+                    Nodes newNode{currentState, currentPath, heuisticManhattan(currentState)};
+                    newNode.currentPath.push_back(DOWN);
+                    priorQueue.push(newNode);
+                }
+            }
+            if (spacePosition % ROW_SIZE != 0) {
+                currentState = startState;
+                puzzleMove(currentState, LEFT);
+                if (visitedStates.find(currentState) == visitedStates.end()) {
+                    // if the new node is not already visited, add it.
+                    Nodes newNode{currentState, currentPath, heuisticManhattan(currentState)};
+                    newNode.currentPath.push_back(LEFT);  // notice the direction would be the opposite way
+                    priorQueue.push(newNode);
+                }
+            }
+            if (spacePosition % ROW_SIZE != ROW_SIZE - 1) {
+                currentState = startState;
+                puzzleMove(currentState, RIGHT);
+                if (visitedStates.find(currentState) == visitedStates.end()) {
+                    // if the new node is not already visited, add it.
+                    Nodes newNode{currentState, currentPath, heuisticManhattan(currentState)};
+                    newNode.currentPath.push_back(RIGHT);  // notice the direction would be the opposite way
+                    priorQueue.push(newNode);
+                }
+            }
+            while (!solutionFound && !priorQueue.empty()) {
+                if (greedySearch(priorQueue.top().currentState)) {
+                    // found a solution here!
+                    solutionFound = true;
+                    solutionSteps.push_back(priorQueue.top().currentPath[0]);
+                }
+                priorQueue.pop();
+            }
+        }
+        end = std::clock();
+        solveTime = (end - start) / CLOCKS_PER_MS;
+        // since it is recursive process, the solution step is in reversed order stored. flip it first.
+        std::reverse(solutionSteps.begin(),solutionSteps.end());
+        printSolution("greedy");
+    }
 };
 
 #endif /* EightPuzzle_h */

@@ -18,11 +18,12 @@ int main(int argc, const char * argv[]) {
     }
     else {
         newPuzzle.puzzleInit(argv[1]);
-        newPuzzle.breadthFirst();
-        newPuzzle.depthFirst();
-        newPuzzle.depthLimited();
-        newPuzzle.iterativeDeepening();
-        newPuzzle.bidirectionalSearch();
+//        newPuzzle.breadthFirst();
+//        newPuzzle.depthFirst();
+//        newPuzzle.depthLimited();
+//        newPuzzle.iterativeDeepening();
+//        newPuzzle.bidirectionalSearch();
+        newPuzzle.greedy();
     }
     
     return 0;
