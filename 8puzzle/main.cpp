@@ -18,12 +18,14 @@ int main(int argc, const char * argv[]) {
     }
     else {
         newPuzzle.puzzleInit(argv[1]);
-//        newPuzzle.breadthFirst();
+        newPuzzle.breadthFirst();
 //        newPuzzle.depthFirst();
 //        newPuzzle.depthLimited();
 //        newPuzzle.iterativeDeepening();
 //        newPuzzle.bidirectionalSearch();
-        newPuzzle.greedy();
+//        newPuzzle.greedy();
+//        newPuzzle.AStarSearch(EightPuzzle::heuisticManhattan, "a_star_manhattan");
+//        newPuzzle.AStarSearch(EightPuzzle::SmartHeuistic, "a_star_smart");
     }
     
     return 0;
