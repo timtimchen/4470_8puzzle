@@ -1,11 +1,3 @@
-//
-//  main.cpp
-//  8puzzle
-//
-//  Created by jing hong chen on 9/2/18.
-//  Copyright © 2018 jing hong chen. All rights reserved.
-//
-
 #include "EightPuzzle.h"
 #include <stdlib.h>     /* srand, rand */
 
@@ -18,14 +10,14 @@ int main(int argc, const char * argv[]) {
     }
     else {
         newPuzzle.puzzleInit(argv[1]);
-        newPuzzle.breadthFirst();
+//        newPuzzle.breadthFirst();
 //        newPuzzle.depthFirst();
 //        newPuzzle.depthLimited();
 //        newPuzzle.iterativeDeepening();
 //        newPuzzle.bidirectionalSearch();
 //        newPuzzle.greedy();
-//        newPuzzle.AStarSearch(EightPuzzle::heuisticManhattan, "a_star_manhattan");
-//        newPuzzle.AStarSearch(EightPuzzle::SmartHeuistic, "a_star_smart");
+//        newPuzzle.AStarSearch(EightPuzzle::heuristicManhattan, "a_star_manhattan");
+        newPuzzle.AStarSearch(EightPuzzle::heuristicRefine, "a_star_refine");
     }
     
     return 0;
